@@ -8,28 +8,49 @@ import chromadb
 from dotenv import load_dotenv
 import os
 
+
+def debug_print_docs(docs, tag="[DEBUG]", max_print=10):
+    print(f"{tag} Toplam {len(docs)} doküman:")
+    for i, doc in enumerate(docs[:max_print]):
+        print(f"{tag} {i+1}: {doc.metadata.get('file_path')}")
+
+
 if __name__ == "__main__":
     load_dotenv()
-    
-    # Embedding model
+
     embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    
-    # ChromaDB setup
+
     db = chromadb.PersistentClient(path="./chroma_db")
     chroma_collection = db.get_or_create_collection("gitlab_repos")
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
 
-    # Indexing
     embedder = GitLabEmbeddingMethod(
         repo_url="https://gitlab.com/ZelihaBaysan/test-llm-repo-assistant",
         private_token=os.environ.get("GITLAB_TOKEN"),
-        branch="main",
-        ignore_directories=["node_modules", "dist", "tests"],
-        ignore_file_extensions=[".png", ".jpg", ".md"]
+        branch="main"
     )
 
     try:
-        # Pipeline
+        print("[index_task_001] Loading all documents...")
+        documents = embedder.get_documents("test_repo")
+        debug_print_docs(documents, "[LOADED]")
+
+        print("\n[index_task_002] Applying regex filters...")
+        documents = embedder.apply_rules(
+            documents,
+            inclusion_rules=[],  # boşsa hepsi dahil
+            exclusion_rules=[
+                r'(^|/)tests?/',
+                r'__pycache__',
+                r'\.md$',
+                r'\.png$',
+                r'\.jpg$',
+                r'\.jpeg$'
+            ]
+        )
+        debug_print_docs(documents, "[FILTERED]")
+
+        print("\n[index_task_003] Creating vector index...")
         pipeline = IngestionPipeline(
             transformations=[
                 SentenceSplitter(chunk_size=512, chunk_overlap=20),
@@ -38,20 +59,9 @@ if __name__ == "__main__":
             vector_store=vector_store,
         )
 
-        print("[index_task_001] Loading documents...")
-        documents = embedder.get_documents("test_repo")
-        print(f"[index_task_001] {len(documents)} documents loaded")
-
-        documents = embedder.apply_rules(
-            documents,
-            inclusion_rules=[],  
-            exclusion_rules=["test"]  
-        )
-        print(f"[index_task_001] {len(documents)} documents after filtering")
-
-        print("[index_task_001] Creating nodes and adding to vector store...")
         pipeline.run(documents=documents)
-        
-        print("[index_task_001] Indexing completed")
+        print("[index_task_004] Indexing completed successfully ✅")
+
     except Exception as e:
-        print(f"Indexing error: {str(e)}")
+        print(f"[ERROR] Indexing failed: {str(e)}")
+        raise
