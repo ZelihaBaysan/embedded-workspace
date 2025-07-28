@@ -14,16 +14,7 @@ class OneDriveEmbeddingMethod:
         refresh_token: str,
         tenant_id: str,
     ):
-        """
-        OneDrive bağlantısı için güncel MSAL tabanlı init metodu
-        
-        Args:
-            client_id: Azure AD uygulama kayıt client_id
-            client_secret: Azure AD uygulama secret
-            redirect_uri: Uygulama redirect URI (ör: http://localhost:8080)
-            refresh_token: Kullanıcı refresh token
-            tenant_id: Azure AD tenant ID (ör: "organizations" veya tenant GUID)
-        """
+
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
@@ -58,6 +49,17 @@ class OneDriveEmbeddingMethod:
         except Exception as e:
             raise Exception(f"Token alma hatası: {str(e)}")
 
+    def _make_graph_api_request(self, url: str) -> dict:
+        try:
+            response = requests.get(
+                url,
+                headers=self.headers
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Graph API request failed: {str(e)}")
+            
     @staticmethod
     def customize_metadata(document: Document, data_source_id: str) -> Document:
         document.metadata.update({
@@ -107,16 +109,7 @@ class OneDriveEmbeddingMethod:
 
         return filtered_docs
 
-    def _make_graph_api_request(self, url: str) -> dict:
-        try:
-            response = requests.get(
-                url,
-                headers=self.headers
-            )
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Graph API request failed: {str(e)}")
+    
 
     def get_documents(self, data_source_id: str) -> List[Document]:
         documents = []
