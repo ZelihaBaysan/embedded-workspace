@@ -1,0 +1,4 @@
+# docs/CHANGELOG.txt
+v0.1.0 - 2023-11-20
+- Initial test repository structure
+- Added basic functionality
