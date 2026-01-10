@@ -1,0 +1,4 @@
+llama-index-core==0.12.49
+llama-index-llms-ollama==0.6.2
+sqlalchemy==2.0.28
+pyodbc==5.1.0
