@@ -24,9 +24,6 @@ If you are here looking for a **specific capability**, use the guide below to qu
 - **Explore experiments or test setups**
   → Look under **`tests/`**
 
-- **Prepare for interviews or internships**
-  → Look under **`internship/`**
-
 ---
 
 ## 📁 Directory Guide
